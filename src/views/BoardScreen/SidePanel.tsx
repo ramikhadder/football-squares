@@ -5,21 +5,41 @@ import {
   IconButton,
   Input,
   Modal,
+  Stack,
   Typography,
   styled,
 } from '@mui/material';
 import { AddCircle } from '@mui/icons-material';
 import { Flex } from '../../components/Flex';
 import React, { useState } from 'react';
+import { SIDE_PANEL_WIDTH } from './constants';
+import { User } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
-const Wrapper = styled(Box)(({ theme }) => ({
-  backgroundColor: theme.palette.grey[900],
-  width: 400,
+const Panel = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.background.default,
+  width: SIDE_PANEL_WIDTH,
 }));
+
+const UserRow = styled(Stack)<{ isSelected: boolean }>(
+  ({ theme, isSelected }) => ({
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 48,
+    padding: 8,
+    cursor: 'pointer',
+    backgroundColor: isSelected ? theme.palette.grey[700] : undefined,
+    '&:hover': {
+      backgroundColor: isSelected
+        ? theme.palette.grey[600]
+        : theme.palette.grey[800],
+    },
+  }),
+);
 
 interface AddUserDialogProps {
   open: boolean;
-  onClose: (args?: { newUser: string }) => void;
+  onClose: (args?: { newUser: User }) => void;
 }
 
 const AddUserDialog = ({ open, onClose }: AddUserDialogProps) => {
@@ -32,32 +52,36 @@ const AddUserDialog = ({ open, onClose }: AddUserDialogProps) => {
         onClose();
       }}
     >
-      <Typography>Add User</Typography>
-      <Input
-        value={userInput}
-        onChange={(e) => {
-          setUserInput(e.target.value);
-        }}
-      />
-      <Button
-        onClick={() => {
-          onClose({ newUser: userInput });
-          setUserInput('');
-        }}
-      >
-        Save
-      </Button>
+      <Stack p="24px">
+        <Typography>Add User</Typography>
+        <Input
+          value={userInput}
+          onChange={(e) => {
+            setUserInput(e.target.value);
+          }}
+        />
+        <Button
+          onClick={() => {
+            onClose({ newUser: { id: uuidv4(), name: userInput } });
+            setUserInput('');
+          }}
+        >
+          Save
+        </Button>
+      </Stack>
     </Dialog>
   );
 };
 
 interface SidePanelProps {
-  users: string[];
-  setUsers: React.Dispatch<React.SetStateAction<string[]>>;
-  setSelectedUser: React.Dispatch<React.SetStateAction<string | undefined>>;
+  selectedUserId: string | undefined;
+  users: User[];
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  setSelectedUser: React.Dispatch<React.SetStateAction<User | undefined>>;
 }
 
 export const SidePanel = ({
+  selectedUserId,
   users,
   setUsers,
   setSelectedUser,
@@ -65,7 +89,7 @@ export const SidePanel = ({
   const [showAddUser, setShowAddUser] = useState(false);
 
   return (
-    <Wrapper>
+    <Panel>
       <AddUserDialog
         open={showAddUser}
         onClose={(args) => {
@@ -75,7 +99,7 @@ export const SidePanel = ({
           setShowAddUser(false);
         }}
       />
-      <Flex alignItems="center" justifyContent="space-between">
+      <Flex alignItems="center" justifyContent="space-between" padding="16px">
         <Typography>Users</Typography>
         <IconButton
           onClick={() => {
@@ -88,17 +112,18 @@ export const SidePanel = ({
       <Box>
         {users.map((user, index) => {
           return (
-            <Box
+            <UserRow
               key={`side_pane_user_${index}`}
+              isSelected={user.id === selectedUserId}
               onClick={() => {
-                setSelectedUser(user);
+                setSelectedUser(user.id !== selectedUserId ? user : undefined);
               }}
             >
-              <Typography>{user}</Typography>
-            </Box>
+              <Typography>{user.name}</Typography>
+            </UserRow>
           );
         })}
       </Box>
-    </Wrapper>
+    </Panel>
   );
 };
